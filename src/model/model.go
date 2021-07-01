@@ -13,6 +13,11 @@ type DBHandler interface {
 	GetContract() []*data.Contract
 	GetOrg() []*data.Organization
 
+	JoinPeer(data.JoinRequest) bool
+	JoinContract(data.JoinRequest) bool
+
+	AddFunction(data.FuncRequest) bool
+	ExecuteFunction(data.ExcuteRequest) bool
 	Close()
 }
 
