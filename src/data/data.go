@@ -42,3 +42,10 @@ type ExcuteRequest struct {
 	Peer1    string `json:"peer1"`
 	Peer2    string `json:"peer2"`
 }
+
+type BlockRequest struct {
+	Time        string `json:"time"`
+	ChannelName string `json:"chanel_name"`
+	SensorVal   string `json:"sensor_val"`
+	ServiceVal  string `json:"service_val"`
+}

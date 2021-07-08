@@ -17,7 +17,7 @@ type DBHandler interface {
 	JoinContract(data.JoinRequest) bool
 
 	AddFunction(data.FuncRequest) bool
-	ExecuteFunction(data.ExcuteRequest) bool
+	ExecuteFunction(data.ExcuteRequest) *data.BlockRequest
 	Close()
 }
 

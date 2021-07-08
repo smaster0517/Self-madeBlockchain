@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/JungBin-Eom/Mini-BlockChain/data"
@@ -61,9 +63,42 @@ func (a *AppHandler) ExecuteFunction(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.db.ExecuteFunction(req) {
-		rd.Text(rw, http.StatusOK, "success")
+	block := a.db.ExecuteFunction(req)
+	bbytes, _ := json.Marshal(block)
+	buff := bytes.NewBuffer(bbytes)
+	res, err := http.Post("http://3.35.172.241:8000/block", "application/json", buff)
+	if err != nil {
+		http.Error(rw, "Unable to request creating block", http.StatusBadRequest)
+	}
+
+	defer res.Body.Close()
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err == nil {
+		rd.Text(rw, http.StatusOK, string(resBody))
 	} else {
-		rd.Text(rw, http.StatusInternalServerError, "fail")
+		rd.Text(rw, http.StatusInternalServerError, "Unable to read body")
+	}
+}
+
+func (a *AppHandler) GetBlock(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	channel, _ := vars["channel"]
+	req, err := http.NewRequest("GET", "http://3.35.172.241:8000/block?channel_name="+channel, nil)
+	if err != nil {
+		http.Error(rw, "Unable to get block", http.StatusBadRequest)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(rw, "Unable to do request", http.StatusInternalServerError)
+	}
+	defer res.Body.Close()
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err == nil {
+		rd.Text(rw, http.StatusOK, string(resBody))
+	} else {
+		rd.Text(rw, http.StatusInternalServerError, "Unable to get block")
 	}
 }

@@ -38,5 +38,7 @@ func MakeHandler() *AppHandler {
 	r.HandleFunc("/joincontract", a.JoinContract).Methods("PUT")
 	r.HandleFunc("/{channel:[A-z]+}/{contract:[A-z]+}/{function:[A-z]+}/do", a.ExecuteFunction).Methods("PUT")
 
+	r.HandleFunc("/block/{channel:[A-z]+}", a.GetBlock).Methods("GET")
+
 	return a
 }

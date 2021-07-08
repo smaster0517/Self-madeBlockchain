@@ -3,6 +3,8 @@ package model
 import (
 	"reflect"
 	"runtime"
+	"strconv"
+	"time"
 
 	"github.com/JungBin-Eom/Mini-BlockChain/contracts"
 	"github.com/JungBin-Eom/Mini-BlockChain/data"
@@ -112,10 +114,12 @@ func (m *memoryHandler) JoinContract(join data.JoinRequest) bool {
 }
 
 func (m *memoryHandler) AddFunction(req data.FuncRequest) bool {
-	for _, v := range m.contractMap {
-		if v.Name == req.Contract {
-			v.Function = append(v.Function, contracts.LightUp)
-			return true
+	if req.Function == "LightAdjust" {
+		for i, v := range m.contractMap {
+			if v.Name == req.Contract {
+				m.contractMap[i].Function = append(m.contractMap[i].Function, contracts.LightAdjust)
+				return true
+			}
 		}
 	}
 	return false
@@ -125,36 +129,45 @@ func GetFunctionName(i interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
 
-func (m *memoryHandler) ExecuteFunction(req data.ExcuteRequest) bool {
-	var pnum1, pnum2 int
+func (m *memoryHandler) ExecuteFunction(req data.ExcuteRequest) *data.BlockRequest {
+	var sensorNum, serviceNum, chanNum int
 	for i, v := range m.peerMap {
 		if v.Name == req.Peer1 {
-			pnum1 = i
+			sensorNum = i
 		} else if v.Name == req.Peer2 {
-			pnum2 = i
+			serviceNum = i
 		}
 	}
 
-	// for _, v := range m.channelMap {
-	// 	if v.Name == req.Channel {
-	// 		for _, vv := range m.contractMap {
-	// 			if vv.Name == req.Contract {
-	// 				for _, vvv := range vv.Function {
-	// 					if GetFunctionName(vvv) == req.Function {
-	// 						vvv(peer1, peer2)
-	// 						return true
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-	// return false
+	for i, v := range m.channelMap {
+		if v.Name == req.Channel {
+			chanNum = i
+			break
+		}
+	}
+	var val1, val2 int
+	if req.Function == "LightAdjust" {
+		val1, val2 = contracts.LightAdjust(m.peerMap[sensorNum], m.peerMap[serviceNum])
+	}
 
-	val1, val2 := contracts.LightUp(m.peerMap[pnum1], m.peerMap[pnum2])
-	m.peerMap[pnum1].Value = val1
-	m.peerMap[pnum2].Value = val2
-	return true
+	m.peerMap[sensorNum].Value = val1
+	m.peerMap[serviceNum].Value = val2
+
+	for i, v := range m.channelMap[chanNum].Peers {
+		if v.Name == m.peerMap[sensorNum].Name {
+			m.channelMap[chanNum].Peers[i].Value = val1
+		} else if v.Name == m.peerMap[serviceNum].Name {
+			m.channelMap[chanNum].Peers[i].Value = val2
+		}
+	}
+
+	var blockReq *data.BlockRequest
+	blockReq.Time = time.Now().Format("2021-07-07")
+	blockReq.ChannelName = m.channelMap[chanNum].Name
+	blockReq.SensorVal = strconv.Itoa(m.peerMap[sensorNum].Value)
+	blockReq.ServiceVal = strconv.Itoa(m.peerMap[serviceNum].Value)
+
+	return blockReq
 }
 
 func (m *memoryHandler) Close() {
