@@ -45,7 +45,7 @@ type ExcuteRequest struct {
 
 type BlockRequest struct {
 	Time        string `json:"time"`
-	ChannelName string `json:"chanel_name"`
+	ChannelName string `json:"channel_name"`
 	SensorVal   string `json:"sensor_val"`
 	ServiceVal  string `json:"service_val"`
 }
