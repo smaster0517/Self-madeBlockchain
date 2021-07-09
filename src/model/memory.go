@@ -161,7 +161,7 @@ func (m *memoryHandler) ExecuteFunction(req data.ExcuteRequest) *data.BlockReque
 		}
 	}
 
-	var blockReq *data.BlockRequest
+	blockReq := &data.BlockRequest{}
 	blockReq.Time = time.Now().Format("2021-07-07")
 	blockReq.ChannelName = m.channelMap[chanNum].Name
 	blockReq.SensorVal = strconv.Itoa(m.peerMap[sensorNum].Value)

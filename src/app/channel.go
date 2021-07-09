@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -64,9 +65,12 @@ func (a *AppHandler) ExecuteFunction(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	block := a.db.ExecuteFunction(req)
-	bbytes, _ := json.Marshal(block)
+	bbytes, err := json.Marshal(block)
+	if err != nil {
+		http.Error(rw, "Unable to marshal block struct", http.StatusInternalServerError)
+	}
 	buff := bytes.NewBuffer(bbytes)
-	res, err := http.Post("http://3.35.172.241:8000/block", "application/json", buff)
+	res, err := http.Post("http://3.35.174.241:8000/block", "application/json", buff)
 	if err != nil {
 		http.Error(rw, "Unable to request creating block", http.StatusBadRequest)
 	}
@@ -84,7 +88,7 @@ func (a *AppHandler) ExecuteFunction(rw http.ResponseWriter, r *http.Request) {
 func (a *AppHandler) GetBlock(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	channel, _ := vars["channel"]
-	req, err := http.NewRequest("GET", "http://3.35.172.241:8000/block?channel_name="+channel, nil)
+	req, err := http.NewRequest("GET", "http://3.35.174.241:8000/block?channel_name="+channel, nil)
 	if err != nil {
 		http.Error(rw, "Unable to get block", http.StatusBadRequest)
 	}
@@ -94,6 +98,8 @@ func (a *AppHandler) GetBlock(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, "Unable to do request", http.StatusInternalServerError)
 	}
 	defer res.Body.Close()
+
+	fmt.Println(res.Body)
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err == nil {
