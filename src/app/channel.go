@@ -65,11 +65,16 @@ func (a *AppHandler) ExecuteFunction(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	block := a.db.ExecuteFunction(req)
+	if block.ChannelName == "" {
+		rd.Text(rw, http.StatusOK, "No Block Create")
+		return
+	}
 	bbytes, err := json.Marshal(block)
 	if err != nil {
 		http.Error(rw, "Unable to marshal block struct", http.StatusInternalServerError)
 	}
 	buff := bytes.NewBuffer(bbytes)
+	fmt.Println("block request")
 	res, err := http.Post("http://3.35.174.241:8000/block", "application/json", buff)
 	if err != nil {
 		http.Error(rw, "Unable to request creating block", http.StatusBadRequest)

@@ -4,11 +4,31 @@ import (
 	"github.com/JungBin-Eom/Mini-BlockChain/data"
 )
 
-func LightAdjust(device *data.Peer, service *data.Peer) (int, int) {
-	if device.Value < 10 {
-		service.Value += 1
-	} else if device.Value > 20 {
-		service.Value -= 1
+func LightAdjust(sensors []data.Peer, services []data.Peer) (int, int, bool) {
+	sum := 0
+	for _, v := range sensors {
+		sum += v.Value
 	}
-	return device.Value, service.Value
+	avg := sum / len(sensors)
+
+	var serviceTarget string
+	if avg >= 20 {
+		serviceTarget = "lightDown"
+	} else if avg <= 10 {
+		serviceTarget = "lightUp"
+	}
+
+	if serviceTarget == "" {
+		return avg, 0, false
+	}
+
+	var targetNum int
+	for i, v := range services {
+		if v.Name == serviceTarget {
+			targetNum = i
+			break
+		}
+	}
+
+	return avg, targetNum, true
 }

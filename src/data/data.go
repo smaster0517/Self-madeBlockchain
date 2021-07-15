@@ -1,9 +1,9 @@
 package data
 
 type Contract struct {
-	Id       int                             `json:"id"`
-	Name     string                          `json:"name"`
-	Function []func(*Peer, *Peer) (int, int) `json:"-"`
+	Id       int                                     `json:"id"`
+	Name     string                                  `json:"name"`
+	Function []func([]Peer, []Peer) (int, int, bool) `json:"-"`
 }
 
 type Channel struct {
@@ -36,11 +36,11 @@ type FuncRequest struct {
 }
 
 type ExcuteRequest struct {
-	Channel  string `json:"channel"`
-	Contract string `json:"contract"`
-	Function string `json:"function"`
-	Peer1    string `json:"peer1"`
-	Peer2    string `json:"peer2"`
+	Channel  string   `json:"channel"`
+	Contract string   `json:"contract"`
+	Function string   `json:"function"`
+	SensorP  []string `json:"sensor_peers"`
+	ServiceP []string `json:"service_peers"`
 }
 
 type BlockRequest struct {

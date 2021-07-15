@@ -130,12 +130,27 @@ func GetFunctionName(i interface{}) string {
 }
 
 func (m *memoryHandler) ExecuteFunction(req data.ExcuteRequest) *data.BlockRequest {
-	var sensorNum, serviceNum, chanNum int
-	for i, v := range m.peerMap {
-		if v.Name == req.Peer1 {
-			sensorNum = i
-		} else if v.Name == req.Peer2 {
-			serviceNum = i
+	// var sensorNums, serviceNums []int
+	var sensorPeers, servicePeers []data.Peer
+	var chanNum int
+	var flag bool
+	for _, v := range m.peerMap {
+		flag = false
+		for _, vv := range req.SensorP {
+			if v.Name == vv {
+				sensorPeers = append(sensorPeers, *v)
+				flag = true
+				break
+			}
+		}
+		if flag == false {
+			for _, vv := range req.ServiceP {
+				if v.Name == vv {
+					servicePeers = append(servicePeers, *v)
+					flag = true
+					break
+				}
+			}
 		}
 	}
 
@@ -145,29 +160,64 @@ func (m *memoryHandler) ExecuteFunction(req data.ExcuteRequest) *data.BlockReque
 			break
 		}
 	}
-	var val1, val2 int
+
+	/*
+		Contract의 종류
+		1. Sensor 1 : 1 Service Mapping 하나의 센서는 하나의 서비스만 영향
+		2. Sensor 1 : N Service Mapping 하나의 센서가 여럿의 서비스에 영향
+		3. Sensor N : 1 Service Mapping 여럿의 센서가 하나의 서비스에 영향
+		4. Sensor N : N Service Mapping 여럿의 센서가 여럿의 서비스에 영향
+
+		센서 피어의 값은 일단 평균으로 계산하여 모든 서비스 피어에게 전달하는 것으로
+		센서 피어의 평균 값에 따라 수행해야 하는 서비스가 다름
+		평균 값을 구하고 서비스 결정한 후 서비스 피어 목록에서 일치하는 것을 찾자
+		서비스에 영향을 준다 -> 서비스를 수행한다
+	*/
+
+	var sensorAvg, serviceIdx int
+	var excuted bool
 	if req.Function == "LightAdjust" {
-		val1, val2 = contracts.LightAdjust(m.peerMap[sensorNum], m.peerMap[serviceNum])
+		// 결국 Sensor 피어의 값들을 처리해서 서비스에 전달할거면
+		// Service 피어들은 컨트랙트에 포함될 필요가 있는가?
+		sensorAvg, serviceIdx, excuted = contracts.LightAdjust(sensorPeers, servicePeers)
 	}
 
-	m.peerMap[sensorNum].Value = val1
-	m.peerMap[serviceNum].Value = val2
-
-	for i, v := range m.channelMap[chanNum].Peers {
-		if v.Name == m.peerMap[sensorNum].Name {
-			m.channelMap[chanNum].Peers[i].Value = val1
-		} else if v.Name == m.peerMap[serviceNum].Name {
-			m.channelMap[chanNum].Peers[i].Value = val2
+	var peerIdx int
+	for i, v := range m.peerMap {
+		if v.Name == servicePeers[serviceIdx].Name {
+			m.peerMap[i].Value += 1
+			peerIdx = i
+			break
 		}
 	}
 
-	blockReq := &data.BlockRequest{}
-	blockReq.Time = time.Now().Format("2021-07-07")
-	blockReq.ChannelName = m.channelMap[chanNum].Name
-	blockReq.SensorVal = strconv.Itoa(m.peerMap[sensorNum].Value)
-	blockReq.ServiceVal = strconv.Itoa(m.peerMap[serviceNum].Value)
+	var channelNum, channelPeerNum int
+	for i, v := range m.channelMap {
+		if v.Name == req.Channel {
+			for j, vv := range m.channelMap[i].Peers {
+				if vv.Name == servicePeers[serviceIdx].Name {
+					channelNum = i
+					channelPeerNum = j
+				}
+			}
+		}
+	}
 
-	return blockReq
+	m.channelMap[channelNum].Peers[channelPeerNum].Value = m.peerMap[peerIdx].Value
+
+	if excuted == true {
+		blockReq := &data.BlockRequest{}
+		blockReq.Time = time.Now().String()
+		blockReq.ChannelName = m.channelMap[chanNum].Name
+		blockReq.SensorVal = strconv.Itoa(sensorAvg)
+		blockReq.ServiceVal = m.peerMap[peerIdx].Name + " " + strconv.Itoa(m.peerMap[peerIdx].Value)
+		// Service는 값을 그냥 실행하는 것 뿐인데 서비스의 값을 주어야하는가?
+		// 컨트랙트 실행 결과로 실행된 서비스가 무엇인지만 알면 되는것 아닌가?
+		// 들어갈거면 서비스 피어 이름이랑 실제 장치의 값이 들어가야 할 것
+		return blockReq
+	} else {
+		return &data.BlockRequest{}
+	}
 }
 
 func (m *memoryHandler) Close() {
