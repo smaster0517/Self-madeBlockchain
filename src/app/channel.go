@@ -83,11 +83,12 @@ func (a *AppHandler) ExecuteFunction(rw http.ResponseWriter, r *http.Request) {
 	defer res.Body.Close()
 
 	resBody, err := ioutil.ReadAll(res.Body)
-	if err == nil {
-		rd.Text(rw, http.StatusOK, string(resBody))
-	} else {
+	if err != nil {
 		rd.Text(rw, http.StatusInternalServerError, "Unable to read body")
 	}
+	var createdBlock map[string]interface{}
+	json.Unmarshal(resBody, &createdBlock)
+	rd.JSON(rw, http.StatusOK, createdBlock)
 }
 
 func (a *AppHandler) GetBlock(rw http.ResponseWriter, r *http.Request) {
@@ -104,12 +105,12 @@ func (a *AppHandler) GetBlock(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer res.Body.Close()
 
-	fmt.Println(res.Body)
-
 	resBody, err := ioutil.ReadAll(res.Body)
-	if err == nil {
-		rd.Text(rw, http.StatusOK, string(resBody))
-	} else {
+	if err != nil {
 		rd.Text(rw, http.StatusInternalServerError, "Unable to get block")
 	}
+
+	var block map[string]interface{}
+	json.Unmarshal(resBody, &block)
+	rd.JSON(rw, http.StatusOK, block)
 }
